@@ -1,4 +1,4 @@
-process __NAME_UPPER__ {
+process DORADO {
     // tag "${meta.id}"
 
     input:
@@ -10,6 +10,6 @@ process __NAME_UPPER__ {
     script:
     def args = task.ext.args ?: ''
     """
-    # TODO: __NAME__ command
+    # TODO: dorado command
     """
 }
