@@ -15,7 +15,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
 # v5.0.0 simplex model. Override at build time if you change those params.
 ARG DORADO_MODEL=dna_r10.4.1_e8.2_400bps_sup@v5.0.0
 ARG DORADO_MOD_MODEL=dna_r10.4.1_e8.2_400bps_sup@v5.0.0_5mCG_5hmCG@v2.0.1
-ARG DORADO_MOD_MODEL_6MA=dna_r10.4.1_e8.2_400bps_sup@v5.0.0_6mA@v3
+ARG DORADO_MOD_MODEL_6MA=dna_r10.4.1_e8.2_400bps_sup@v5.0.0_6mA@v2
 
 RUN apt-get update \
     && apt-get upgrade -y \
