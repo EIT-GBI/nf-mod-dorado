@@ -6,13 +6,13 @@
 process DORADO_BASECALLER {
     tag "${meta.id}"
 
-    publishDir "${params.outdir}/basecalled", mode: 'link'
+    publishDir "${params.outdir}/basecalled", mode: 'copy'
 
     input:
     tuple val(meta), path(pod5)
 
     output:
-    tuple val(meta), path("${meta.id}.dorado.bam"), emit: bam
+    tuple val(meta), path("${meta.id}.dorado.bam"), emit: ubam
 
     script:
     def args = task.ext.args ?: ''
