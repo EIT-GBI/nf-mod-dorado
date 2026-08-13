@@ -16,12 +16,12 @@ process DORADO_BASECALLER {
 
     script:
     def args = task.ext.args ?: ''
-    def mods = params.basecall.modified_bases ? "--modified-bases ${params.basecall.modified_bases}" : ''
+    def mods = params.basecalling.modified_bases ? "--modified-bases ${params.basecalling.modified_bases}" : ''
     """
     dorado basecaller \\
         ${args} \\
         ${mods} \\
-        ${params.basecall.model} \\
+        ${params.basecalling.model} \\
         ${pod5} \\
         > ${meta.id}.dorado.bam
     """

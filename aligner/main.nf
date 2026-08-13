@@ -20,11 +20,12 @@ process DORADO_ALIGNER {
         -t ${task.cpus} \\
         ${fasta} \\
         ${reads} \\
-        > ${meta.id}.aligned.bam
+        > ${meta.id}.sorted.bam
     """
 
     stub:
     """
-    touch ${meta.id}.aligned.bam
+    touch ${meta.id}.sorted.bam
+    touch ${meta.id}.sorted.bam.bai
     """
 }
