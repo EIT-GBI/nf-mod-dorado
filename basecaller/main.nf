@@ -20,11 +20,12 @@ process DORADO_BASECALLER {
     """
     dorado basecaller \\
         ${args} \\
+        "${params.basecalling.model}" \\
+        "${pod5}" \\
         ${mods} \\
-        ${params.basecalling.model} \\
-        ${pod5} \\
         > ${meta.id}.dorado.bam
     """
+
 
     stub:
     """
