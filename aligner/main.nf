@@ -15,12 +15,16 @@ process DORADO_ALIGNER {
     script:
     def args = task.ext.args ?: ''
     """
+    mkdir -p aligned
     dorado aligner \\
         ${args} \\
         -t ${task.cpus} \\
+        -o aligned \\
         ${fasta} \\
-        ${reads} \\
-        > ${meta.id}.sorted.bam
+        ${reads} 
+
+    mv aligned/*.bam ${meta.id}.sorted.bam
+    mv aligned/*.bam.bai ${meta.id}.sorted.bam.bai
     """
 
     stub:
