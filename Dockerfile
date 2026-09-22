@@ -19,5 +19,7 @@ RUN mkdir -p /opt/models \
     && dorado download --model dna_r10.4.1_e8.2_400bps_sup@v5.0.0 --directory /opt/models \
     && dorado download --model dna_r10.4.1_e8.2_400bps_sup@v5.0.0_5mCG_5hmCG@v2.0.1 --directory /opt/models \
     && dorado download --model dna_r10.4.1_e8.2_400bps_sup@v5.0.0_6mA@v2 --directory /opt/models \
+    && dorado download --model dna_r10.4.1_e8.2_400bps_sup@v5.0.0_4mC_5mC@v2 --directory /opt/models \
     && dorado download --model dna_r10.4.1_e8.2_400bps_hac@v5.0.0 --directory /opt/models \
-    && dorado download --model dna_r10.4.1_e8.2_400bps_hac@v5.0.0_6mA@v2 --directory /opt/models
+    && dorado download --model dna_r10.4.1_e8.2_400bps_hac@v5.0.0_6mA@v2 --directory /opt/models \
+    && dorado download --model dna_r10.4.1_e8.2_400bps_hac@v5.0.0_4mC_5mC@v2 --directory /opt/models
