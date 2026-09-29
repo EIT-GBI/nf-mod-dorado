@@ -1,10 +1,8 @@
-// Adapter/primer trimming with dorado's trimming tool
-// UBAM in, UBAM out
+// Adapter/primer trimming with dorado trim.
+// uBAM (or FASTQ) in, trimmed uBAM out.
 
-process DORADO_TRIM{
+process DORADO_TRIM {
     tag "${meta.id}"
-
-    publishDir "${params.outdir}/trimmed", mode: 'copy'
 
     input:
     tuple val(meta), path(reads)
