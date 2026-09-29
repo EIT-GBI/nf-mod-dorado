@@ -7,13 +7,15 @@ pipelines.
 Image: `ghcr.io/eit-gbi/nf-mod-dorado:v0.0.0`
 
 The image carries dorado 0.8.3 on the NVIDIA CUDA 12.4.1 runtime (Ubuntu 22.04),
-built for `linux/amd64` and `linux/arm64`, with these models baked in under
-`/opt/models`:
+built for `linux/amd64` and `linux/arm64`. **The image carries the sup
+(highest-accuracy) models only**, baked in under `/opt/models`:
 
 | Model | Modified-base models baked in beside it |
 | --- | --- |
 | `dna_r10.4.1_e8.2_400bps_sup@v5.0.0` | `5mCG_5hmCG@v2.0.1`, `6mA@v2`, `4mC_5mC@v2` |
-| `dna_r10.4.1_e8.2_400bps_hac@v5.0.0` | `6mA@v2`, `4mC_5mC@v2` |
+
+No hac or fast model is baked in. dorado can still download one by name at run
+time (e.g. `model = 'hac'`), which needs internet access from the compute node.
 
 ## Processes
 
@@ -28,8 +30,9 @@ Each subtool lives in its own folder (nf-core style), with a `main.nf`, a
 
 - `DORADO_BASECALLER` basecalls a POD5 file or directory to an unaligned BAM,
   `<meta.id>.dorado.bam`. `model` is dorado's required positional model
-  argument: a model path such as `/opt/models/dna_r10.4.1_e8.2_400bps_sup@v5.0.0`,
-  or a name dorado resolves and downloads itself (e.g. `sup`).
+  argument: normally the baked-in sup model,
+  `/opt/models/dna_r10.4.1_e8.2_400bps_sup@v5.0.0`, or a name dorado resolves
+  and downloads itself (e.g. `sup@v5.0.0`).
 - `DORADO_TRIM` trims adapters and primers from basecalled reads (uBAM or
   FASTQ), emitting the unaligned BAM `<meta.id>.trimmed.bam`.
 - `DORADO_ALIGNER` aligns basecalled reads (uBAM or FASTQ) to the reference and
@@ -70,7 +73,8 @@ Two things about that line are load-bearing:
   `--modified-bases` takes one or more values and consumes every following
   argument that does not start with `-`, so placed before the positionals it
   would swallow the model path. Several modifications can be listed
-  (`--modified-bases 5mCG_5hmCG 6mA`).
+  (`--modified-bases 5mCG_5hmCG 6mA`). The sup modified-base models baked in are
+  `5mCG_5hmCG`, `6mA` and `4mC_5mC`.
 
 Other examples:
 
@@ -147,21 +151,34 @@ DORADO_BASECALLER(ch_pod5, '/opt/models/dna_r10.4.1_e8.2_400bps_sup@v5.0.0')
 
 ## Tests
 
-`nf-test test`. Every process has a stub test covering wiring and output names.
+`nf-test test`. Every process has a stub test, tagged `stub`, covering wiring
+and output names.
 
 `DORADO_TRIM` and `DORADO_ALIGNER` also have tests that run dorado for real on
 CPU against `ghcr.io/eit-gbi/nf-mod-dorado:v0.0.0`, using the nf-core sarscov2
 nanopore reads (`test_2.fastq.gz`) and genome, and snapshot what comes out.
-They need Docker and the `nft-bam` plugin declared in `nf-test.config`, which
-nf-test fetches on first run. They share `tests.config` at the repo root;
-`tests-args.config` adds flags through `ext.args`. BAM outputs snapshot
-read-level checksums rather than the file checksum, because dorado writes its
-command line and version into an `@PG` header line.
+They need Docker, the image built locally under that tag, and the `nft-bam`
+plugin declared in `nf-test.config`, which nf-test fetches on first run. They
+share `tests.config` at the repo root; `tests-args.config` adds flags through
+`ext.args`. BAM outputs snapshot read-level checksums rather than the file
+checksum, because dorado writes its command line and version into an `@PG`
+header line.
 
-**`DORADO_BASECALLER` is only stub-tested.** Basecalling needs an NVIDIA GPU,
-which CI runners do not have (the nf-mod-parabricks precedent). A stub test
-cannot check the dorado command line: `-stub-run` replaces the whole script
-block, so the tool never runs.
+**CI runs the stub tests only** (`nf-test test --tag stub`). The image is ~11 GB
+unpacked, and building it needs more disk than a GitHub-hosted runner has free,
+so `.github/workflows/ci.yml` deliberately differs from the org's copy and does
+not build it. Run the full suite locally before merging a change to a process
+or the Dockerfile:
+
+```bash
+docker build -t ghcr.io/eit-gbi/nf-mod-dorado:v0.0.0 .   # tag = conf/module.config
+NXF_SYNTAX_PARSER=v1 nf-test test --verbose
+```
+
+**`DORADO_BASECALLER` is only stub-tested, locally and in CI.** Basecalling
+needs an NVIDIA GPU (the nf-mod-parabricks precedent). A stub test cannot check
+the dorado command line: `-stub-run` replaces the whole script block, so the
+tool never runs.
 
 ## Releasing
 
