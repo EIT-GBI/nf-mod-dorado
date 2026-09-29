@@ -43,7 +43,15 @@ jobs:
           fi
 
   test:
-    name: nf-test
+    # DELIBERATELY DIFFERS from the org's copy of this workflow (nf-mod-samtools
+    # et al.), which builds the image and runs every nf-test case. This module's
+    # image is ~11 GB unpacked (CUDA runtime base plus ~4.3 GB of dorado and its
+    # bundled libraries), and building it needs more disk than a GitHub-hosted
+    # runner has free (~14 GB). So CI runs only the stub tests, which need no
+    # image. The real DORADO_TRIM / DORADO_ALIGNER tests stay in the repo and
+    # are run locally (see the README's Tests section); DORADO_BASECALLER needs
+    # a GPU and is stub-only everywhere. The lint job above is the org's, as is.
+    name: nf-test (stub tests only)
     runs-on: ubuntu-latest
     env:
       # nf-test 0.9.3 generates its harness with the spread operator and a for
@@ -59,24 +67,4 @@ jobs:
       - uses: nf-core/setup-nf-test@v2
         with:
           version: '0.9.3'
-      - name: Build the image the tests pin to
-        # The tests resolve their container through conf/module.config, which
-        # names a released tag. That tag does not exist on a PR that changes the
-        # Dockerfile, and on a module that has never been released it does not
-        # exist at all, so the run would fail on `manifest unknown`.
-        #
-        # Building it here under that exact tag makes docker resolve it locally
-        # and skip the pull, so the tests exercise this commit's Dockerfile
-        # rather than whatever was last published.
-        run: |
-          set -euo pipefail
-          [ -f Dockerfile ] || { echo "no Dockerfile; tests use the published image"; exit 0; }
-          IMAGE=$(grep -oE "ghcr\.io/${GITHUB_REPOSITORY,,}:v[0-9]+\.[0-9]+\.[0-9]+" conf/module.config | head -1 || true)
-          if [ -z "${IMAGE}" ]; then
-            echo "conf/module.config uses an external image; nothing to build"
-            exit 0
-          fi
-          echo "building ${IMAGE} from this commit's Dockerfile"
-          docker build -t "${IMAGE}" .
-
-      - run: nf-test test --verbose
+      - run: nf-test test --tag stub --verbose
