@@ -20,6 +20,12 @@ ARG TARGETARCH
 # One stage per architecture: download, verify and unpack the dorado release.
 # They run on the build platform and never execute the binary they fetch, so a
 # cross-architecture build does not run anything under emulation here.
+#
+# The ~2.6 GB tarball is streamed straight into tar while sha256sum reads the
+# same bytes, so it never touches the disk: peak usage is the ~4.3 GB extracted
+# tree alone rather than tarball plus tree. The checksum is compared once the
+# stream ends and a mismatch fails the step, so a bad download never becomes a
+# layer. No --retry: a retried transfer would be appended to the same stream.
 
 FROM --platform=$BUILDPLATFORM ${CUDA_IMAGE} AS fetch-base
 
@@ -36,22 +42,30 @@ WORKDIR /tmp/build
 FROM fetch-base AS fetch-amd64
 ARG DORADO_VERSION
 ARG DORADO_SHA256_AMD64
-RUN curl -fsSL --retry 3 -o dorado.tar.gz \
-        "https://cdn.oxfordnanoportal.com/software/analysis/dorado-${DORADO_VERSION}-linux-x64.tar.gz" \
-    && echo "${DORADO_SHA256_AMD64}  dorado.tar.gz" | sha256sum -c - \
+RUN set -e \
     && mkdir -p /opt/dorado \
-    && tar -xzf dorado.tar.gz -C /opt/dorado --strip-components=1 \
-    && rm dorado.tar.gz
+    && mkfifo dorado.fifo \
+    && { tar -xzf dorado.fifo -C /opt/dorado --strip-components=1 & tar_pid=$!; } \
+    && curl -fsSL "https://cdn.oxfordnanoportal.com/software/analysis/dorado-${DORADO_VERSION}-linux-x64.tar.gz" \
+        | tee dorado.fifo | sha256sum | cut -d' ' -f1 > dorado.sha256 \
+    && wait "$tar_pid" \
+    && echo "sha256 $(cat dorado.sha256), expected ${DORADO_SHA256_AMD64}" \
+    && [ "$(cat dorado.sha256)" = "${DORADO_SHA256_AMD64}" ] \
+    && rm dorado.fifo dorado.sha256
 
 FROM fetch-base AS fetch-arm64
 ARG DORADO_VERSION
 ARG DORADO_SHA256_ARM64
-RUN curl -fsSL --retry 3 -o dorado.tar.gz \
-        "https://cdn.oxfordnanoportal.com/software/analysis/dorado-${DORADO_VERSION}-linux-arm64.tar.gz" \
-    && echo "${DORADO_SHA256_ARM64}  dorado.tar.gz" | sha256sum -c - \
+RUN set -e \
     && mkdir -p /opt/dorado \
-    && tar -xzf dorado.tar.gz -C /opt/dorado --strip-components=1 \
-    && rm dorado.tar.gz
+    && mkfifo dorado.fifo \
+    && { tar -xzf dorado.fifo -C /opt/dorado --strip-components=1 & tar_pid=$!; } \
+    && curl -fsSL "https://cdn.oxfordnanoportal.com/software/analysis/dorado-${DORADO_VERSION}-linux-arm64.tar.gz" \
+        | tee dorado.fifo | sha256sum | cut -d' ' -f1 > dorado.sha256 \
+    && wait "$tar_pid" \
+    && echo "sha256 $(cat dorado.sha256), expected ${DORADO_SHA256_ARM64}" \
+    && [ "$(cat dorado.sha256)" = "${DORADO_SHA256_ARM64}" ] \
+    && rm dorado.fifo dorado.sha256
 
 # The dorado that ships in the image, for the target architecture.
 FROM fetch-${TARGETARCH} AS dorado
@@ -59,6 +73,8 @@ FROM fetch-${TARGETARCH} AS dorado
 # models ######################################################################
 #
 # Bake the basecalling models into /opt/models so POD5 runs are offline-safe.
+# Sup (highest accuracy) only, with its modified-base models: hac and fast are
+# deliberately not carried. dorado can still fetch one by name at run time.
 # Models are architecture-independent, so they are downloaded with the build
 # platform's own dorado (natively, even in a multi-arch build) and copied into
 # every target image.
@@ -81,9 +97,6 @@ RUN mkdir -p /opt/models \
         dna_r10.4.1_e8.2_400bps_sup@v5.0.0_5mCG_5hmCG@v2.0.1 \
         dna_r10.4.1_e8.2_400bps_sup@v5.0.0_6mA@v2 \
         dna_r10.4.1_e8.2_400bps_sup@v5.0.0_4mC_5mC@v2 \
-        dna_r10.4.1_e8.2_400bps_hac@v5.0.0 \
-        dna_r10.4.1_e8.2_400bps_hac@v5.0.0_6mA@v2 \
-        dna_r10.4.1_e8.2_400bps_hac@v5.0.0_4mC_5mC@v2 \
     ; do \
         /opt/dorado/bin/dorado download --model "${model}" --directory /opt/models || exit 1; \
     done
@@ -96,7 +109,7 @@ ARG CUDA_IMAGE
 ARG DORADO_VERSION
 
 LABEL org.opencontainers.image.title="dorado" \
-    org.opencontainers.image.description="dorado ${DORADO_VERSION} with baked-in R10.4.1 models on ${CUDA_IMAGE}" \
+    org.opencontainers.image.description="dorado ${DORADO_VERSION} with baked-in R10.4.1 sup models on ${CUDA_IMAGE}" \
     org.opencontainers.image.version="${DORADO_VERSION}" \
     org.opencontainers.image.source="https://github.com/nanoporetech/dorado" \
     org.opencontainers.image.licenses="LicenseRef-ONT-Public-License-1.0"
