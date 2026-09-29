@@ -1,0 +1,37 @@
+name: dorado_aligner
+description: |
+  Align basecalled ONT reads to a reference with dorado aligner (minimap2),
+  producing a coordinate-sorted, indexed BAM. Read tags such as MM/ML are
+  carried through.
+keywords:
+  - alignment
+  - minimap2
+  - nanopore
+  - bam
+  - dorado
+tools:
+  - dorado:
+      description: |
+        dorado aligner
+
+input:
+  - reads:
+      type: map/file
+      description: |
+        Sample metadata map and basecalled reads (unaligned BAM or FASTQ).
+      pattern: "tuple val(meta), path(reads)"
+  - fasta:
+      type: map/file
+      description: |
+        Reference FASTA and its .fai index.
+      pattern: "tuple path(fasta), path(fai)"
+
+output:
+  - bam:
+      type: map/file
+      description: |
+        Coordinate-sorted BAM and its index.
+      pattern: "tuple val(meta), path(*.sorted.bam), path(*.sorted.bam.bai)"
+
+authors:
+  - "EIT Generative Biology Institute"
