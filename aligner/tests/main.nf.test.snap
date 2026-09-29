@@ -1,0 +1,44 @@
+{
+    "DORADO_ALIGNER - passes minimap2 options through from ext.args": {
+        "content": [
+            "9869fd15d5eaf9f483f7e115e9f0ba69",
+            {
+                "readCount": 4004
+            },
+            3096
+        ],
+        "meta": {
+            "nf-test": "0.9.3",
+            "nextflow": "26.04.6"
+        },
+        "timestamp": "2026-09-29T15:26:50.775199"
+    },
+    "DORADO_ALIGNER - aligns the uBAM that DORADO_TRIM emits": {
+        "content": [
+            "025ce6ef735fcedce9ce0557701ce122",
+            {
+                "readCount": 4002
+            },
+            2982
+        ],
+        "meta": {
+            "nf-test": "0.9.3",
+            "nextflow": "26.04.6"
+        },
+        "timestamp": "2026-09-29T15:26:56.343033"
+    },
+    "DORADO_ALIGNER - aligns FASTQ to a sorted, indexed BAM": {
+        "content": [
+            "5e51dfc48188351b7825949a1540fa81",
+            {
+                "readCount": 4002
+            },
+            2986
+        ],
+        "meta": {
+            "nf-test": "0.9.3",
+            "nextflow": "26.04.6"
+        },
+        "timestamp": "2026-09-29T15:26:46.048529"
+    }
+}

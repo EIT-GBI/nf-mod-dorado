@@ -1,0 +1,99 @@
+nextflow_process {
+
+    name "Test DORADO_TRIM"
+    script "../main.nf"
+    process "DORADO_TRIM"
+
+    // nf-core sarscov2 nanopore test set: 4002 amplicon reads, 2145959 bases
+    def TEST_FASTQ = 'file("https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/sarscov2/nanopore/fastq/test_2.fastq.gz", checkIfExists: true)'
+
+    test("DORADO_TRIM - stub - wiring and output names") {
+
+        options "-stub-run"
+
+        when {
+            process {
+                """
+                input[0] = [[id:'test'], ${TEST_FASTQ}]
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert process.out.ubam
+            assert file(process.out.ubam[0][1]).name == 'test.trimmed.bam'
+        }
+    }
+
+    test("DORADO_TRIM - trims adapters and primers to an unaligned BAM") {
+
+        config "../../tests.config"
+
+        when {
+            process {
+                """
+                input[0] = [[id:'test'], ${TEST_FASTQ}]
+                """
+            }
+        }
+
+        then {
+            assert process.success
+
+            // nft-bam streams the file, so every accessor needs its own reader
+            def bam_path = process.out.ubam[0][1]
+            def stats    = bam(bam_path).getStatistics(include: ["readCount"])
+            def pg       = bam(bam_path).getHeader().find { it.startsWith('@PG') && it.contains('PN:dorado') }
+            def bases    = bam(bam_path).getSamLines().sum { line -> line.split('\t')[9].length() }
+
+            // unaligned: no @SQ lines, and dorado trim recorded itself
+            assert !bam(bam_path).getHeader().any { it.startsWith('@SQ') }
+            assert pg.contains('ID:trim')
+            // dorado trim drops two of the 4002 reads; primers go too, so a
+            // good seventh of the input bases is removed
+            assert stats.readCount == 4000
+            assert bases == 1843170
+
+            // Checksum of the records sorted by name, rather than of the file or
+            // of the reads in file order: dorado writes its command line into an
+            // @PG header line, and dorado trim writes reads in whatever order its
+            // worker threads finish them, which changes from run to run.
+            def reads    = bam(bam_path).getSamLines().collect { line -> line.split('\t')[[0, 1, 9, 10]].join('\t') }.sort().join('\n').md5()
+            assert snapshot(reads, stats, bases).match()
+        }
+    }
+
+    test("DORADO_TRIM - passes flags through from ext.args") {
+
+        config "../../tests-args.config"
+
+        when {
+            process {
+                """
+                input[0] = [[id:'test'], ${TEST_FASTQ}]
+                """
+            }
+        }
+
+        then {
+            assert process.success
+
+            def bam_path = process.out.ubam[0][1]
+            def stats    = bam(bam_path).getStatistics(include: ["readCount"])
+            def pg       = bam(bam_path).getHeader().find { it.startsWith('@PG') && it.contains('PN:dorado') }
+            def bases    = bam(bam_path).getSamLines().sum { line -> line.split('\t')[9].length() }
+
+            // dorado records its own command line, which shows the flag arrived
+            assert pg.contains('--no-trim-primers')
+            // with primer trimming off only adapters go, so far fewer bases do
+            assert stats.readCount == 4000
+            assert bases == 2144090
+
+            // records sorted by name: dorado trim's output order is not stable
+            def reads    = bam(bam_path).getSamLines().collect { line -> line.split('\t')[[0, 1, 9, 10]].join('\t') }.sort().join('\n').md5()
+            assert snapshot(reads, stats, bases).match()
+        }
+    }
+}
+
