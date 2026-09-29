@@ -9,6 +9,8 @@ nextflow_process {
 
     test("DORADO_TRIM - stub - wiring and output names") {
 
+        // CI runs only the tests tagged "stub" (see .github/workflows/ci.yml)
+        tag "stub"
         options "-stub-run"
 
         when {
