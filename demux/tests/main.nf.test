@@ -1,0 +1,31 @@
+nextflow_process {
+
+    name "Test DORADO_DEMUX"
+    script "../main.nf"
+    process "DORADO_DEMUX"
+
+    // Stub only: a real test needs barcoded reads, and the public nanopore
+    // test data (sarscov2) is not barcoded.
+    def TEST_FASTQ = 'file("https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/sarscov2/nanopore/fastq/test_2.fastq.gz", checkIfExists: true)'
+    def TEST_POD5 = 'file("https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/sarscov2/nanopore/pod5/test.pod5", checkIfExists: true)'
+    test("DORADO_DEMUX - stub - wiring and output names") {
+
+        // CI runs only the tests tagged "stub" (see .github/workflows/ci.yml)
+        tag "stub"
+        options "-stub-run"
+
+        when {
+            process {
+                """
+                input[0] = [[id:'run'], [${TEST_FASTQ}, ${TEST_POD5}]]
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert process.out.ubam[0][1].collect { f -> file(f).name }.sort() == ['barcode01.bam', 'unclassified.bam']
+            assert !process.out.summary
+        }
+    }
+}

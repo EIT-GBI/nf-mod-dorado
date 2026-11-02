@@ -1,13 +1,15 @@
 # nf-mod-dorado
 
 Nextflow module for [dorado](https://github.com/nanoporetech/dorado), Oxford
-Nanopore's basecaller, read trimmer and aligner. Used as a git submodule by
+Nanopore's basecaller, demultiplexer, read trimmer and aligner. Used as a git submodule by
 pipelines.
 
 Image: `ghcr.io/eit-gbi/nf-mod-dorado:v0.0.0`
 
 The image carries dorado 0.8.3 on the NVIDIA CUDA 12.4.1 runtime (Ubuntu 22.04),
-built for `linux/amd64` and `linux/arm64`. **The image carries the sup
+published for `linux/amd64` only (the release build has no room for both
+architectures on a standard runner; the Dockerfile still builds `linux/arm64`
+locally). **The image carries the sup
 (highest-accuracy) models only**, baked in under `/opt/models`:
 
 | Model | Modified-base models baked in beside it |
@@ -25,6 +27,7 @@ Each subtool lives in its own folder (nf-core style), with a `main.nf`, a
 | Process | Path | Inputs | Emits |
 | --- | --- | --- | --- |
 | `DORADO_BASECALLER` | `basecaller/main.nf` | `tuple val(meta), path(pod5)`<br>`val model` | `ubam` |
+| `DORADO_DEMUX` | `demux/main.nf` | `tuple val(meta), path(reads)` | `ubam`, `summary` |
 | `DORADO_TRIM` | `trim/main.nf` | `tuple val(meta), path(reads)` | `ubam` |
 | `DORADO_ALIGNER` | `aligner/main.nf` | `tuple val(meta), path(reads)`<br>`tuple path(fasta), path(fai)` | `bam` |
 
@@ -33,6 +36,11 @@ Each subtool lives in its own folder (nf-core style), with a `main.nf`, a
   argument: normally the baked-in sup model,
   `/opt/models/dna_r10.4.1_e8.2_400bps_sup@v5.0.0`, or a name dorado resolves
   and downloads itself (e.g. `sup@v5.0.0`).
+- `DORADO_DEMUX` splits one or more basecalled reads files by barcode into
+  `demux/<kit>_<barcode>.bam` plus `demux/unclassified.bam`. Pass either
+  `--kit-name <kit>` (classify here) or `--no-classify` (split on the `BC` tag
+  the basecaller wrote when run with `--kit-name`) through `ext.args`.
+  `--emit-summary` adds `demux/barcoding_summary.txt` on the `summary` output.
 - `DORADO_TRIM` trims adapters and primers from basecalled reads (uBAM or
   FASTQ), emitting the unaligned BAM `<meta.id>.trimmed.bam`.
 - `DORADO_ALIGNER` aligns basecalled reads (uBAM or FASTQ) to the reference and
@@ -134,6 +142,7 @@ And include the processes:
 
 ```groovy
 include { DORADO_BASECALLER } from './modules/dorado/basecaller/main.nf'
+include { DORADO_DEMUX } from './modules/dorado/demux/main.nf'
 include { DORADO_TRIM } from './modules/dorado/trim/main.nf'
 include { DORADO_ALIGNER } from './modules/dorado/aligner/main.nf'
 ```

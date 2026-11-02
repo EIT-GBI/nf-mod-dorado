@@ -1,0 +1,39 @@
+name: dorado_demux
+description: |
+  Split basecalled ONT reads by barcode with dorado demux. Classifies with
+  --kit-name, or splits on the basecaller's own classification with
+  --no-classify (both through ext.args).
+keywords:
+  - demultiplexing
+  - barcodes
+  - nanopore
+  - ubam
+  - dorado
+tools:
+  - dorado:
+      description: |
+        dorado demux
+
+input:
+  - reads:
+      type: map/file
+      description: |
+        Sample metadata map and one or more basecalled reads files (any HTS
+        format), demultiplexed together.
+      pattern: "tuple val(meta), path(reads)"
+
+output:
+  - ubam:
+      type: map/file
+      description: |
+        One unaligned BAM per barcode found, plus unclassified.bam. Dorado
+        0.8 names them <kit>_<barcode>.bam.
+      pattern: "tuple val(meta), path(demux/*.bam)"
+  - summary:
+      type: map/file
+      description: |
+        Per-read barcoding summary; only with --emit-summary in ext.args.
+      pattern: "tuple val(meta), path(demux/barcoding_summary.txt)"
+
+authors:
+  - "EIT Generative Biology Institute"
