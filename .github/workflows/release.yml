@@ -135,7 +135,11 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: .
-          platforms: linux/amd64,linux/arm64
+          # amd64 only. Both architectures in one job need ~30 GB of disk; a
+          # standard runner has ~14 GB free. The GPU nodes that basecall are
+          # amd64, and dorado's arm64 build bundles CUDA 11.4, so arm64 would be
+          # CPU-only anyway. The Dockerfile still builds arm64 locally.
+          platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
