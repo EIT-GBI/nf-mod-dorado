@@ -32,6 +32,11 @@ output:
       description: |
         Coordinate-sorted BAM and its index.
       pattern: "tuple val(meta), path(*.sorted.bam), path(*.sorted.bam.bai)"
+  - versions_dorado:
+      type: map/file
+      description: |
+        dorado version, published to the `versions` topic.
+      pattern: "topic: versions"
 
 authors:
   - "EIT Generative Biology Institute"

@@ -13,6 +13,7 @@ process DORADO_BASECALLER {
 
     output:
     tuple val(meta), path("${meta.id}.dorado.bam"), emit: ubam
+    tuple val("${task.process}"), val('dorado'), eval('(command -v dorado >/dev/null && dorado --version 2>&1 || echo unknown) | head -n1'), emit: versions_dorado, topic: versions
 
     script:
     // ext.args goes AFTER the positional arguments, not before them.

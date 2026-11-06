@@ -9,6 +9,7 @@ process DORADO_TRIM {
 
     output:
     tuple val(meta), path("${meta.id}.trimmed.bam"), emit: ubam
+    tuple val("${task.process}"), val('dorado'), eval('(command -v dorado >/dev/null && dorado --version 2>&1 || echo unknown) | head -n1'), emit: versions_dorado, topic: versions
 
     script:
     def args = task.ext.args ?: ''

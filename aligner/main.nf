@@ -10,6 +10,7 @@ process DORADO_ALIGNER {
 
     output:
     tuple val(meta), path("${meta.id}.sorted.bam"), path("${meta.id}.sorted.bam.bai"), emit: bam
+    tuple val("${task.process}"), val('dorado'), eval('(command -v dorado >/dev/null && dorado --version 2>&1 || echo unknown) | head -n1'), emit: versions_dorado, topic: versions
 
     script:
     def args = task.ext.args ?: ''

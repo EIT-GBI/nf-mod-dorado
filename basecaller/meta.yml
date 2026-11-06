@@ -37,6 +37,11 @@ output:
       description: |
         Unaligned BAM of basecalled reads.
       pattern: "tuple val(meta), path(*.dorado.bam)"
+  - versions_dorado:
+      type: map/file
+      description: |
+        dorado version, published to the `versions` topic.
+      pattern: "topic: versions"
 
 authors:
   - "EIT Generative Biology Institute"

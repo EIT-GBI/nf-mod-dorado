@@ -17,6 +17,7 @@ process DORADO_DEMUX {
     output:
     tuple val(meta), path("demux/*.bam"),                 emit: ubam
     tuple val(meta), path("demux/barcoding_summary.txt"), emit: summary, optional: true
+    tuple val("${task.process}"), val('dorado'), eval('(command -v dorado >/dev/null && dorado --version 2>&1 || echo unknown) | head -n1'), emit: versions_dorado, topic: versions
 
     script:
     def args = task.ext.args ?: ''
