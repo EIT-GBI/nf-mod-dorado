@@ -1,0 +1,47 @@
+name: dorado_basecaller
+description: |
+  Basecall ONT POD5 signal data to an unaligned BAM, optionally with
+  modified-base (methylation) calls as MM/ML tags. Needs an NVIDIA GPU.
+keywords:
+  - basecalling
+  - nanopore
+  - pod5
+  - ubam
+  - gpu
+  - dorado
+tools:
+  - dorado:
+      description: |
+        dorado basecaller
+
+input:
+  - pod5:
+      type: map/file
+      description: |
+        Sample metadata map and a POD5 file or a directory of POD5 files.
+      pattern: "tuple val(meta), path(pod5)"
+  - model:
+      type: string
+      description: |
+        Basecalling model: a model name or complex (e.g. `sup`) that dorado
+        resolves itself, or a path to a model directory. The image bakes the
+        R10.4.1 v5.0.0 sup model only (plus its modified-base models)
+        under /opt/models, e.g. `/opt/models/dna_r10.4.1_e8.2_400bps_sup@v5.0.0`.
+        Modified-base calling is requested through ext.args, e.g.
+        `--modified-bases 5mCG_5hmCG`.
+      pattern: "val model"
+
+output:
+  - ubam:
+      type: map/file
+      description: |
+        Unaligned BAM of basecalled reads.
+      pattern: "tuple val(meta), path(*.dorado.bam)"
+  - versions_dorado:
+      type: map/file
+      description: |
+        dorado version, published to the `versions` topic.
+      pattern: "topic: versions"
+
+authors:
+  - "EIT Generative Biology Institute"

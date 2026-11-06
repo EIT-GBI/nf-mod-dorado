@@ -1,0 +1,35 @@
+name: dorado_trim
+description: |
+  Trim adapters and primers from basecalled ONT reads.
+keywords:
+  - trimming
+  - adapters
+  - nanopore
+  - ubam
+  - dorado
+tools:
+  - dorado:
+      description: |
+        dorado trim
+
+input:
+  - reads:
+      type: map/file
+      description: |
+        Sample metadata map and basecalled reads (unaligned BAM or FASTQ).
+      pattern: "tuple val(meta), path(reads)"
+
+output:
+  - ubam:
+      type: map/file
+      description: |
+        Unaligned BAM of trimmed reads.
+      pattern: "tuple val(meta), path(*.trimmed.bam)"
+  - versions_dorado:
+      type: map/file
+      description: |
+        dorado version, published to the `versions` topic.
+      pattern: "topic: versions"
+
+authors:
+  - "EIT Generative Biology Institute"

@@ -1,0 +1,30 @@
+{
+    "DORADO_TRIM - passes flags through from ext.args": {
+        "content": [
+            "c15a48a023f5cbcbea266805073dd56d",
+            {
+                "readCount": 4000
+            },
+            2144090
+        ],
+        "meta": {
+            "nf-test": "0.9.3",
+            "nextflow": "26.04.6"
+        },
+        "timestamp": "2026-09-29T15:27:08.168971"
+    },
+    "DORADO_TRIM - trims adapters and primers to an unaligned BAM": {
+        "content": [
+            "db076d59698d4e64eb6d975f37045ea2",
+            {
+                "readCount": 4000
+            },
+            1843170
+        ],
+        "meta": {
+            "nf-test": "0.9.3",
+            "nextflow": "26.04.6"
+        },
+        "timestamp": "2026-09-29T15:27:04.915654"
+    }
+}

@@ -1,0 +1,149 @@
+nextflow_process {
+
+    name "Test DORADO_ALIGNER"
+    script "../main.nf"
+    process "DORADO_ALIGNER"
+
+    // nf-core sarscov2 test set: 4002 nanopore amplicon reads and the genome.
+    // (The set's other nanopore FASTQ, test.fastq.gz, does not map to this
+    // genome at all, with dorado or with minimap2, so it cannot show alignment.)
+    def TEST_FASTQ = 'file("https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/sarscov2/nanopore/fastq/test_2.fastq.gz", checkIfExists: true)'
+    def TEST_REF   = '[file("https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/sarscov2/genome/genome.fasta", checkIfExists: true), file("https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/sarscov2/genome/genome.fasta.fai", checkIfExists: true)]'
+
+    test("DORADO_ALIGNER - stub - wiring and output names") {
+
+        // CI runs only the tests tagged "stub" (see .github/workflows/ci.yml)
+        tag "stub"
+        options "-stub-run"
+
+        when {
+            process {
+                """
+                input[0] = [[id:'test'], ${TEST_FASTQ}]
+                input[1] = ${TEST_REF}
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert process.out.bam
+            assert file(process.out.bam[0][1]).name == 'test.sorted.bam'
+            assert file(process.out.bam[0][2]).name == 'test.sorted.bam.bai'
+        }
+    }
+
+    test("DORADO_ALIGNER - aligns FASTQ to a sorted, indexed BAM") {
+
+        config "../../tests.config"
+
+        when {
+            process {
+                """
+                input[0] = [[id:'test'], ${TEST_FASTQ}]
+                input[1] = ${TEST_REF}
+                """
+            }
+        }
+
+        then {
+            assert process.success
+
+            // nft-bam streams the file, so every accessor needs its own reader
+            def bam_path = process.out.bam[0][1]
+            def stats    = bam(bam_path).getStatistics(include: ["readCount"])
+            def hd       = bam(bam_path).getHeader().find { it.startsWith('@HD') }
+            // primary, mapped: none of unmapped (0x4), secondary (0x100) or
+            // supplementary (0x800) set
+            def mapped   = bam(bam_path).getSamLines().count { line -> ((line.split('\t')[1] as int) & 0x904) == 0 }
+
+            // nft-bam's own `sorted` statistic cannot be used: it compares
+            // every record's position, and the unmapped reads that a sorted
+            // BAM keeps at the end all sit at position 0
+            def pos      = bam(bam_path).getSamLines().findAll { line -> line.split('\t')[2] != '*' }.collect { line -> line.split('\t')[3] as long }
+
+            assert hd.contains('SO:coordinate')
+            assert pos == pos.toSorted()
+            assert file(process.out.bam[0][2]).size() > 0
+            // dorado's default lr:hq preset
+            assert stats.readCount == 4002
+            assert mapped == 2986
+
+            // read-level checksum rather than the file checksum: dorado writes
+            // its version and minimap2 details into an @PG header line
+            assert snapshot(bam(bam_path).getReadsMD5(), stats, mapped).match()
+        }
+    }
+
+    test("DORADO_ALIGNER - passes minimap2 options through from ext.args") {
+
+        config "../../tests-args.config"
+
+        when {
+            process {
+                """
+                input[0] = [[id:'test'], ${TEST_FASTQ}]
+                input[1] = ${TEST_REF}
+                """
+            }
+        }
+
+        then {
+            assert process.success
+
+            def bam_path = process.out.bam[0][1]
+            def stats    = bam(bam_path).getStatistics(include: ["readCount"])
+            def mapped   = bam(bam_path).getSamLines().count { line -> ((line.split('\t')[1] as int) & 0x904) == 0 }
+
+            // dorado's aligner @PG does not record its options, so what shows
+            // `-x map-ont` arrived intact is that more reads map than under
+            // the default lr:hq preset (2986), and supplementary records appear
+            assert stats.readCount == 4004
+            assert mapped == 3096
+
+            assert snapshot(bam(bam_path).getReadsMD5(), stats, mapped).match()
+        }
+    }
+
+    test("DORADO_ALIGNER - aligns the uBAM that DORADO_TRIM emits") {
+
+        config "../../tests.config"
+
+        setup {
+            run("DORADO_TRIM") {
+                script "../../trim/main.nf"
+                process {
+                    """
+                    input[0] = [[id:'test'], ${TEST_FASTQ}]
+                    """
+                }
+            }
+        }
+
+        when {
+            process {
+                """
+                input[0] = DORADO_TRIM.out.ubam
+                input[1] = ${TEST_REF}
+                """
+            }
+        }
+
+        then {
+            assert process.success
+
+            def bam_path = process.out.bam[0][1]
+            def stats    = bam(bam_path).getStatistics(include: ["readCount"])
+            def mapped   = bam(bam_path).getSamLines().count { line -> ((line.split('\t')[1] as int) & 0x904) == 0 }
+
+            assert stats.readCount == 4002
+            assert mapped == 2982
+
+            // Checksum of the records sorted by name and position rather than
+            // in file order: DORADO_TRIM writes reads in whatever order its
+            // threads finish them, so reads that tie on position can swap.
+            def reads    = bam(bam_path).getSamLines().collect { line -> line.split('\t')[[0, 1, 2, 3, 5, 9, 10]].join('\t') }.sort().join('\n').md5()
+            assert snapshot(reads, stats, mapped).match()
+        }
+    }
+}
