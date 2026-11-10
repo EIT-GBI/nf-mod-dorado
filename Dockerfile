@@ -3,10 +3,18 @@
 FROM nvidia/cuda:12.4.1-runtime-ubuntu22.04
 
 ARG DORADO_VERSION=0.8.3
-ENV DEBIAN_FRONTEND=noninteractive
+
+LABEL org.opencontainers.image.title="dorado" \
+    org.opencontainers.image.description="dorado on nvidia/cuda:12.4.1-runtime-ubuntu22.04" \
+    org.opencontainers.image.version="${DORADO_VERSION}" \
+    org.opencontainers.image.source="https://github.com/nanoporetech/dorado" \
+    org.opencontainers.image.licenses="ONT-Public-License"
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    LC_ALL=C.UTF-8
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates curl \
+    && apt-get install -y --no-install-recommends ca-certificates curl procps \
     && curl -fsSL "https://cdn.oxfordnanoportal.com/software/analysis/dorado-${DORADO_VERSION}-linux-x64.tar.gz" \
         | tar -xz -C /opt \
     && ln -s /opt/dorado-${DORADO_VERSION}-linux-x64/bin/dorado /usr/local/bin/dorado \
