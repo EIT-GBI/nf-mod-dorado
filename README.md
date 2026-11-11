@@ -4,7 +4,7 @@ Nextflow module for [dorado](https://github.com/nanoporetech/dorado), Oxford
 Nanopore's basecaller, demultiplexer, read trimmer and aligner. Used as a git submodule by
 pipelines.
 
-Image: `ghcr.io/eit-gbi/nf-mod-dorado:v0.0.0`
+Image: `ghcr.io/eit-gbi/nf-mod-dorado:v1.0.0`
 
 The image carries dorado 0.8.3 on the NVIDIA CUDA 12.4.1 runtime (Ubuntu 22.04),
 published for `linux/amd64` only (the release build has no room for both
@@ -164,7 +164,7 @@ DORADO_BASECALLER(ch_pod5, '/opt/models/dna_r10.4.1_e8.2_400bps_sup@v5.0.0')
 and output names.
 
 `DORADO_TRIM` and `DORADO_ALIGNER` also have tests that run dorado for real on
-CPU against `ghcr.io/eit-gbi/nf-mod-dorado:v0.0.0`, using the nf-core sarscov2
+CPU against `ghcr.io/eit-gbi/nf-mod-dorado:v1.0.0`, using the nf-core sarscov2
 nanopore reads (`test_2.fastq.gz`) and genome, and snapshot what comes out.
 They need Docker, the image built locally under that tag, and the `nft-bam`
 plugin declared in `nf-test.config`, which nf-test fetches on first run. They
@@ -180,7 +180,7 @@ not build it. Run the full suite locally before merging a change to a process
 or the Dockerfile:
 
 ```bash
-docker build -t ghcr.io/eit-gbi/nf-mod-dorado:v0.0.0 .   # tag = conf/module.config
+docker build -t ghcr.io/eit-gbi/nf-mod-dorado:v1.0.0 .   # tag = conf/module.config
 NXF_SYNTAX_PARSER=v1 nf-test test --verbose
 ```
 
